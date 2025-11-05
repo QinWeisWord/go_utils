@@ -1,151 +1,121 @@
-# go_utils 常用静态方法工具库
+# go_utils
 
-一个面向日常开发的 Go 工具库，覆盖字符串、时间与环境、文件与 JSON、摘要与随机、集合泛型、网络与常见格式校验等功能。库内所有函数均含中文注释（参数、返回值、关键步骤），文件行数控制在 300 行以内，适合快速集成与二次开发。
+实用工具集合，按领域拆分多个包：中文数字转换、类型转换、字符串、文件与JSON、网络、校验、时间环境、加密随机、泛型集合等。
 
-## 版本要求
-
-- Go 1.18+（使用了泛型）
-
-## 安装与引用
-
-本仓库已在当前目录初始化为模块：`go_utils`，包名为 `utils`。
-
-- 本仓库内其他代码直接引用：
+## 安装
 
 ```go
-import utils "go_utils"
-```
-
-- 在其他项目中以本地路径引用（推荐）：在目标项目 `go.mod` 中添加：
-
-```go
-require go_utils v0.0.0
-replace go_utils => ../golang/go_utils
-```
-
-然后在代码中：
-
-```go
-import utils "go_utils"
-```
-
-> 说明：若未来托管到远程仓库（如 GitHub），可直接 `go get <repo>/go_utils` 并按包名 `utils` 引用。
-
-## 快速开始
-
-```go
-package main
-
 import (
-    "fmt"
-    utils "go_utils"
+    "go_utils/numberchinese"
+    "go_utils/convert"
+    // 其他包按需引用：
+    // "go_utils/strutil"
+    // "go_utils/filejson"
+    // "go_utils/netutil"
+    // "go_utils/validate"
+    // "go_utils/timeenv"
+    // "go_utils/cryptorand"
+    // "go_utils/collections"
 )
+```
 
-func main() {
-    fmt.Println(utils.IsEmpty("  "))            // true
-    fmt.Println(utils.FormatNow("2006-01-02"))  // 当天日期
-    fmt.Println(utils.UUIDv4())                  // 随机UUID
-    fmt.Println(utils.IsEmail("user@example.com")) // true
+## 中文数字转换（Number → 中文）
+
+提供整数与浮点的中文小写/大写读法，以及通用接口。
+
+API：
+- `ToChineseLowerInt(n int64) string`
+- `ToChineseUpperInt(n int64) string`
+- `ToChineseLowerFloat(f float64, decimalPlaces int) string`
+- `ToChineseUpperFloat(f float64, decimalPlaces int) string`
+- `ToChineseLowerNumber(v interface{}, decimalPlaces int) (string, error)`
+- `ToChineseUpperNumber(v interface{}, decimalPlaces int) (string, error)`
+
+示例：
+
+```go
+// 整数
+numberchinese.ToChineseLowerInt(12345) // "一万二千三百四十五"
+numberchinese.ToChineseUpperInt(10010) // "壹万零壹拾"
+
+// 浮点（保留两位小数）
+numberchinese.ToChineseLowerFloat(10.25, 2) // "十点二五"
+numberchinese.ToChineseUpperFloat(1001.05, 2) // "壹仟零壹点零五"
+
+// 通用，自动分派整数/浮点
+s, err := numberchinese.ToChineseUpperNumber(123.456, 2) // "壹佰贰拾叁点四六"
+```
+
+说明：
+- 四位一组（万、亿、兆），自动处理连续零。
+- 10～19 的中文小写常用省略“一”，大写保留“壹”。
+- 浮点小数位按 `decimalPlaces` 四舍五入。
+
+## 人民币中文大写（元/角/分）
+
+将金额转换为人民币中文大写，支持负数与“整”。
+
+API：
+- `ToChineseRMBUpper(amount float64) string`
+- `ToChineseRMBUpperNumber(v interface{}) (string, error)`
+
+示例：
+
+```go
+numberchinese.ToChineseRMBUpper(123.45)     // "壹佰贰拾叁元肆角伍分"
+numberchinese.ToChineseRMBUpper(100.0)      // "壹佰元整"
+numberchinese.ToChineseRMBUpper(-10.01)     // "负壹拾元零壹分"
+numberchinese.ToChineseRMBUpperNumber("0") // "零元整"
+```
+
+说明：
+- 元为整数部分，角/分为小数两位；第三位及以上按分位四舍五入。
+- 整数部分为 0 时仍输出“零元”。小数为 0 时输出“整”。
+- 负值前缀“负”。
+
+## 类型转换工具（统一错误处理）
+
+提供常见数据类型之间的转换方法，所有失败情况统一返回 `ConvertError`，包含来源类型、目标类型、原始值与错误说明。
+
+API：
+- `ToString(v interface{}) (string, error)`
+- `ToInt(v interface{}) (int, error)`
+- `ToInt64(v interface{}) (int64, error)`
+- `ToUint64(v interface{}) (uint64, error)`
+- `ToFloat64(v interface{}) (float64, error)`
+- `ToBool(v interface{}) (bool, error)`
+
+示例：
+
+```go
+// 字符串 → 数字
+i, _ := convert.ToInt("123")         // 123
+i64, _ := convert.ToInt64("-42")     // -42
+u64, _ := convert.ToUint64("99")     // 99
+f64, _ := convert.ToFloat64("3.14")  // 3.14
+
+// 数字/布尔 → 字符串
+s1, _ := convert.ToString(100)        // "100"
+s2, _ := convert.ToString(true)       // "true"
+
+// 任意 → 布尔
+b1, _ := convert.ToBool("yes")        // true
+b2, _ := convert.ToBool(0)            // false
+
+// 错误处理统一：
+if _, err := convert.ToUint64("-1"); err != nil {
+    // err 为 *convert.ConvertError，包含 FromType/ToType/Value/Message
+    fmt.Println(err)
 }
 ```
 
-## 模块结构
+说明：
+- 字符串解析遵循 Go 的 `strconv` 规则，空字符串视为错误。
+- `ToUint64` 不接受负数（包含负整型与负浮点）。
+- 浮点转换采用截断取整原则，例如 `ToInt(3.9) == 3`。
+- `ToBool` 支持常见真值/假值词：真值如 `"true"/"yes"/"on"/"1"/"是"/"真"/"开"`；假值如 `"false"/"no"/"off"/"0"/"否"/"假"/"关"`。
+- 所有失败都返回 `ConvertError`，包含 `FromType/ToType/Value/Message`，便于统一日志和提示。
 
-- `strutil.go`：字符串处理
-- `time_env_util.go`：时间与环境变量
-- `file_json_util.go`：文件与 JSON
-- `crypto_rand_util.go`：摘要/签名与随机工具
-- `generic_collections_util.go`：集合泛型（切片/映射）
-- `net_util.go`：本机 IPv4 获取
-- `validate_util.go`：常见格式校验
+## 许可证
 
-## API 总览（部分）
-
-- 字符串：`IsEmpty`、`Trim`、`ToUpper`、`ToLower`、`ContainsSubstr`、`ReplaceAll`、`Split`、`Join`、`Substring`（UTF-8安全）、`Reverse`、`PadLeft`、`PadRight`
-- 时间与环境：`NowUnix`、`NowUnixMilli`、`FormatNow`、`FormatTime`、`ParseTime`、`AddDays`、`StartOfDay`、`EndOfDay`、`GetEnv`、`GetEnvDefault`
-- 文件与 JSON：`Exists`、`IsDir`、`ReadFile`、`WriteFile`、`CopyFile`、`ListDir`、`ToJSON`、`ToPrettyJSON`、`FromJSON[T]`
-- 摘要与随机：`MD5String`（非安全场景）、`SHA256String`、`SHA512String`、`HmacSHA256`、`RandomInt`、`RandomString`、`UUIDv4`
-- 集合泛型：`Contains[T]`、`IndexOf[T]`、`Unique[T]`、`Map[T,R]`、`Filter[T]`、`Keys[K,V]`、`Values[K,V]`、`Merge[K,V]`、`GetOrDefault[K,V]`
-- 网络：`GetLocalIPv4`
-- 校验：`IsEmail`、`IsMobileCN`、`IsURL`、`IsIP`、`IsChineseIDCard`、`IsCNPatentApplicationNo`、`IsCNPatentNo`、`IsUnifiedSocialCreditCode`
-
-## 常用示例
-
-- 字符串
-
-```go
-utils.ContainsSubstr("hello", "he")      // true
-utils.Substring("中文ABC", 0, 2)            // "中文"
-utils.PadRight("ID", "0", 5)             // "ID000"
-```
-
-- 时间与环境
-
-```go
-utils.NowUnix()                            // 当前秒级时间戳
-utils.FormatTime(time.Now(), "15:04:05")  // 当前时分秒
-utils.GetEnvDefault("PORT", "8080")       // 环境变量或默认值
-```
-
-- 文件与 JSON
-
-```go
-_ = utils.WriteFile("out.txt", "content")
-txt, _ := utils.ReadFile("out.txt")
-js, _ := utils.ToPrettyJSON(map[string]int{"a":1})
-type User struct { Name string }
-u, _ := utils.FromJSON[User]("{\"Name\":\"Bob\"}")
-```
-
-- 摘要与随机
-
-```go
-utils.SHA256String("data")                // 64位十六进制字符串
-utils.HmacSHA256("data", "secret")        // HMAC-SHA256
-utils.RandomString(16)                     // 16位安全随机字符串
-utils.UUIDv4()                             // 随机UUID v4
-```
-
-- 集合泛型
-
-```go
-utils.Contains([]int{1,2,3}, 2)            // true
-utils.Unique([]string{"a","a","b"})     // ["a","b"]
-utils.Map([]int{1,2,3}, func(x int) string { return fmt.Sprint(x) })
-```
-
-- 网络
-
-```go
-ips, _ := utils.GetLocalIPv4()             // 非回环IPv4列表
-```
-
-- 校验
-
-```go
-utils.IsEmail("user@example.com")         // true
-utils.IsMobileCN("+86 13800138000")       // true
-utils.IsURL("example.com")                // true（自动补全http）
-utils.IsIP("2001:db8::1")                 // true（IPv6）
-utils.IsChineseIDCard("11010519491231002X") // true/false 视具体号码
-utils.IsCNPatentApplicationNo("201410123456.7") // true（常见格式）
-utils.IsCNPatentNo("CN102345678A")        // true（常见格式）
-utils.IsUnifiedSocialCreditCode("91350100M000100Y4") // true/false
-```
-
-## 注意事项
-
-- `MD5String` 不适合安全场景（请使用 `SHA256String`/`HmacSHA256`）。
-- URL 校验为通用场景设计，若存在企业内网域名或无后缀的主机名，请根据需要扩展。
-- 中国身份证校验包含日期与校验位算法，不校验行政区划码字典。
-- 中国专利申请号/专利号格式较多，此实现覆盖常见形式，如需更严谨校验，可提供样例加强规则。
-
-## 构建
-
-```bash
-go build ./...
-```
-
-## 贡献与扩展
-
-欢迎根据你的场景补充更多静态方法（如日志、正则校验、配置加载、HTTP 请求封装等）。保持中文注释与关键步骤说明的一致性即可。
+MIT

@@ -1,4 +1,4 @@
-package utils
+package filejson
 
 import (
     "encoding/json"

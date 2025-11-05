@@ -1,4 +1,4 @@
-package utils
+package cryptorand
 
 import (
     "crypto/hmac"

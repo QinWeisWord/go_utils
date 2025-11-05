@@ -1,4 +1,4 @@
-package utils
+package collections
 
 // 本文件包含通用切片与映射的泛型工具函数
 
