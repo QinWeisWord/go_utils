@@ -215,3 +215,39 @@ _ = convert.FillStructFromMap(pm, &pf2, "json")
 - 标签为 `"-"` 的字段会被跳过；空标签或无标签时使用字段名。
 - 赋值会进行基础类型转换与范围校验（如 `int16/int32/uint8/uint16/uint32`）。
 - 未导出字段不会被读写；`map` 遍历顺序不保证。
+
+## 数组/对象数组去重
+
+提供对任意数组/切片的去重方法，以及对象数组按指定字段（或标签）去重的方法（保持首次出现顺序）。
+
+API：
+- `convert.UniqueSlice(v interface{}) (interface{}, error)`：数组/切片去重；返回同元素类型的切片。
+- `convert.UniqueSliceByField(v interface{}, field string, tag string) (interface{}, error)`：对象数组按字段/标签值去重；支持元素为结构体/结构体指针或 `map[string]T`。
+
+示例：
+
+```go
+// 通用数组/切片去重（返回值需断言为具体类型）
+out1, _ := convert.UniqueSlice([]int{1,1,2,3,2})
+fmt.Println(out1.([]int)) // [1 2 3]
+
+// 结构体按字段（或标签）去重
+type User struct {
+    ID   int    `json:"id"`
+    Name string `json:"name"`
+}
+users := []User{{ID:1,Name:"A"},{ID:1,Name:"B"},{ID:2,Name:"C"}}
+out2, _ := convert.UniqueSliceByField(users, "id", "json")
+fmt.Println(out2.([]User)) // [{1 A} {2 C}]（按首次出现保留）
+
+// map元素按键去重
+ms := []map[string]interface{}{{"id":1,"name":"A"},{"id":1,"name":"B"},{"id":2,"name":"C"}}
+out3, _ := convert.UniqueSliceByField(ms, "id", "")
+fmt.Println(out3.([]map[string]interface{})) // 保留id=1首次与id=2
+```
+
+说明：
+- 输入必须为数组或切片；类型不匹配返回 `ConvertError`。
+- 对结构体元素可通过 `tag`（如 `json`）匹配标签名；为空则只按字段名匹配。
+- 键值类型可比较时使用集合去重；不可比较类型将使用值的字符串表示作为键（可能存在碰撞风险）。
+- 缺失键或 `nil` 指针视为特殊键，仅保留其首次出现的元素。
