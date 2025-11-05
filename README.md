@@ -251,3 +251,101 @@ fmt.Println(out3.([]map[string]interface{})) // 保留id=1首次与id=2
 - 对结构体元素可通过 `tag`（如 `json`）匹配标签名；为空则只按字段名匹配。
 - 键值类型可比较时使用集合去重；不可比较类型将使用值的字符串表示作为键（可能存在碰撞风险）。
 - 缺失键或 `nil` 指针视为特殊键，仅保留其首次出现的元素。
+
+## 日期与时间扩展
+
+提供周/月/年边界、时间差、截断与 RFC3339（ISO8601）格式化/解析等方法。
+
+API：
+- `timeenv.StartOfWeek(t time.Time, firstWeekday time.Weekday) time.Time`
+- `timeenv.EndOfWeek(t time.Time, firstWeekday time.Weekday) time.Time`
+- `timeenv.StartOfMonth(t time.Time) time.Time`
+- `timeenv.EndOfMonth(t time.Time) time.Time`
+- `timeenv.StartOfYear(t time.Time) time.Time`
+- `timeenv.EndOfYear(t time.Time) time.Time`
+- `timeenv.AddMonths(t time.Time, months int) time.Time`
+- `timeenv.DiffDays(a, b time.Time) int`
+- `timeenv.DiffHours(a, b time.Time) int64`
+- `timeenv.IsSameDay(a, b time.Time) bool`
+- `timeenv.IsWeekend(t time.Time) bool`
+- `timeenv.NextWeekday(t time.Time, weekday time.Weekday) time.Time`
+- `timeenv.TruncateToHour(t time.Time) time.Time`
+- `timeenv.FormatRFC3339(t time.Time) string`
+- `timeenv.ParseRFC3339(s string) (time.Time, error)`
+- `timeenv.ToLocal(t time.Time, loc *time.Location) time.Time`
+- `timeenv.StartOfQuarter(t time.Time) time.Time`
+- `timeenv.EndOfQuarter(t time.Time) time.Time`
+- `timeenv.GetWeekRange(t time.Time, firstWeekday time.Weekday) (time.Time, time.Time)`
+- `timeenv.GetMonthRange(t time.Time) (time.Time, time.Time)`
+- `timeenv.GetQuarterRange(t time.Time) (time.Time, time.Time)`
+- `timeenv.GetYearRange(t time.Time) (time.Time, time.Time)`
+
+### 公历与农历互转
+
+API：
+- `timeenv.SolarToLunar(t time.Time) (timeenv.LunarDate, error)`：公历→农历；支持 1900-01-31 至 2099-12-31。
+- `timeenv.LunarToSolar(ld timeenv.LunarDate, loc *time.Location) (time.Time, error)`：农历→公历；支持 1900-2099 年。
+
+示例：
+
+```go
+// 公历转农历
+ld, _ := timeenv.SolarToLunar(time.Date(2024, 2, 10, 9, 0, 0, 0, time.Local))
+// ld.Year/ld.Month/ld.Day/ld.IsLeap 表示农历年月日与是否闰月
+
+// 农历转公历（示例：农历2024年正月初一）
+solar, _ := timeenv.LunarToSolar(timeenv.LunarDate{Year:2024, Month:1, Day:1, IsLeap:false}, time.Local)
+```
+
+说明：
+- 基准为农历 1900-正月初一对应的公历 1900-01-31；转换按“当天 00:00:00”进行。
+- 农历日是否合法会根据当年月份大小与闰月信息校验；超出范围返回错误。
+
+示例：
+
+```go
+now := time.Now()
+
+// 周起止（周一为一周起点）
+sow := timeenv.StartOfWeek(now, time.Monday)
+eow := timeenv.EndOfWeek(now, time.Monday)
+
+// 月/年起止
+som := timeenv.StartOfMonth(now)
+eom := timeenv.EndOfMonth(now)
+soy := timeenv.StartOfYear(now)
+eoy := timeenv.EndOfYear(now)
+
+// 增加月数（月底溢出自动裁剪）
+nxt := timeenv.AddMonths(time.Date(2024, time.January, 31, 10, 0, 0, 0, time.Local), 1) // 2024-02-29 10:00:00
+
+// 时间差
+dd := timeenv.DiffDays(som, eom)   // 29 或 30 / 31
+dh := timeenv.DiffHours(sow, eow)  // 167（7天-1纳秒向下取整）
+
+// 判断与截断
+_ = timeenv.IsSameDay(now, time.Now())
+_ = timeenv.IsWeekend(now)
+th := timeenv.TruncateToHour(now)
+
+// RFC3339（ISO8601）
+s := timeenv.FormatRFC3339(now)
+t, _ := timeenv.ParseRFC3339(s)
+
+// 转到指定时区
+tz := time.FixedZone("UTC+8", 8*3600)
+bj := timeenv.ToLocal(now, tz)
+
+// 周/月/季度/年区间
+ws, we := timeenv.GetWeekRange(now, time.Monday)
+ms, me := timeenv.GetMonthRange(now)
+qs, qe := timeenv.GetQuarterRange(now)
+ys, ye := timeenv.GetYearRange(now)
+```
+
+说明：
+- 周起点可选 `time.Monday` 或 `time.Sunday` 等；结束时间为起点+7天-1纳秒。
+- `AddMonths` 会将目标日期裁剪到目标月的最大天数（如 1月31日 +1月 → 2月最后一天）。
+- `DiffDays` 基于各自当天起始计算，可能受夏令时影响；`DiffHours` 基于绝对时间差。
+- 区间方法返回 `[start, end]`；周的结束为起点+7天-1纳秒，月/季/年的结束为所在单位的最后一纳秒。
+- 季度划分为 Q1: 1–3 月，Q2: 4–6 月，Q3: 7–9 月，Q4: 10–12 月。
