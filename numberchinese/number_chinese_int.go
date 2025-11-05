@@ -2,7 +2,37 @@ package numberchinese
 
 // 本文件提供整数到中文（小写/大写）的转换实现
 
-// fourDigitToChinese 将四位组整数转换为中文表示，并返回该组的最高单位索引
+// ToChineseLowerInt 将有符号整数转换为中文数字（小写）
+// 参数 n: 有符号整数
+// 返回值: 中文小写数字字符串（支持负数，以“负”开头）
+// 关键步骤：处理负号，按绝对值分组转换并拼接
+func ToChineseLowerInt(n int64) string {
+    if n == 0 {
+        return cnLowerDigits[0]
+    }
+    neg := n < 0
+    if neg { n = -n }
+    s := integerToChinese(uint64(n), cnLowerDigits, true)
+    if neg { return "负" + s }
+    return s
+}
+
+// ToChineseUpperInt 将有符号整数转换为中文大写数字（金融大写）
+// 参数 n: 有符号整数
+// 返回值: 中文大写数字字符串（支持负数，以“负”开头）
+// 关键步骤：处理负号并使用大写数字映射，不省略“壹拾”
+func ToChineseUpperInt(n int64) string {
+    if n == 0 {
+        return cnUpperDigits[0]
+    }
+    neg := n < 0
+    if neg { n = -n }
+    s := integerToChinese(uint64(n), cnUpperDigits, false)
+    if neg { return "负" + s }
+    return s
+}
+
+// fourDigitToChinese 将四位组整数转换为中文表示，并返回该组的最高单位索引（私有方法，置于公有方法之后）
 // 参数 group: 0~9999的四位组整数
 // 参数 digits: 数字映射（小写或大写）
 // 参数 omitOneTen: 是否省略“十”前的一（用于小写在10~19时常用“十X”）
@@ -38,7 +68,7 @@ func fourDigitToChinese(group int, digits []string, omitOneTen bool) (string, in
     return ncJoinStrings(out), highestIdx
 }
 
-// integerToChinese 将无符号整数转换为中文表示（支持多组单位）
+// integerToChinese 将无符号整数转换为中文表示（支持多组单位）（私有方法，置于公有方法之后）
 // 参数 u: 无符号整数（按绝对值处理）
 // 参数 digits: 数字映射（小写或大写）
 // 参数 omitOneTen: 是否在10~19省略“一”（小写为true；大写为false）
@@ -82,34 +112,4 @@ func integerToChinese(u uint64, digits []string, omitOneTen bool) string {
         hasAppended = true
     }
     return ncJoinStrings(out)
-}
-
-// ToChineseLowerInt 将有符号整数转换为中文数字（小写）
-// 参数 n: 有符号整数
-// 返回值: 中文小写数字字符串（支持负数，以“负”开头）
-// 关键步骤：处理负号，按绝对值分组转换并拼接
-func ToChineseLowerInt(n int64) string {
-    if n == 0 {
-        return cnLowerDigits[0]
-    }
-    neg := n < 0
-    if neg { n = -n }
-    s := integerToChinese(uint64(n), cnLowerDigits, true)
-    if neg { return "负" + s }
-    return s
-}
-
-// ToChineseUpperInt 将有符号整数转换为中文大写数字（金融大写）
-// 参数 n: 有符号整数
-// 返回值: 中文大写数字字符串（支持负数，以“负”开头）
-// 关键步骤：处理负号并使用大写数字映射，不省略“壹拾”
-func ToChineseUpperInt(n int64) string {
-    if n == 0 {
-        return cnUpperDigits[0]
-    }
-    neg := n < 0
-    if neg { n = -n }
-    s := integerToChinese(uint64(n), cnUpperDigits, false)
-    if neg { return "负" + s }
-    return s
 }
