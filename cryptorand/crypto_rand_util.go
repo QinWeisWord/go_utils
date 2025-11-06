@@ -8,7 +8,6 @@ import (
     "crypto/sha512"
     "encoding/hex"
     mrand "math/rand"
-    "time"
 )
 
 // MD5String 计算字符串的MD5（以十六进制字符串返回）
@@ -59,8 +58,7 @@ func RandomInt(min, max int) int {
     if max < min {
         return min
     }
-    // 关键步骤：初始化随机种子
-    mrand.Seed(time.Now().UnixNano())
+    // 关键步骤：使用默认随机源（Go 1.20 起无需调用 Seed）
     return min + mrand.Intn(max-min+1)
 }
 
@@ -98,8 +96,7 @@ func UUIDv4() string {
     var u [16]byte
     _, err := rand.Read(u[:])
     if err != nil {
-        // 关键步骤：若失败则用时间与math/rand退化生成
-        mrand.Seed(time.Now().UnixNano())
+        // 关键步骤：若失败则用默认 math/rand 退化生成（Go 1.20 起无需调用 Seed）
         for i := 0; i < 16; i++ {
             u[i] = byte(mrand.Intn(256))
         }

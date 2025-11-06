@@ -8,7 +8,6 @@ import (
     "image/color"
     "image/png"
     mrand "math/rand"
-    "time"
 )
 
 // 本文件提供验证码生成功能：字符串验证码与数字图片验证码（7段数码管样式）。
@@ -31,8 +30,8 @@ func GenerateCodeString(length int, alphabet string) (string, error) {
         var rb [1]byte
         _, err := crand.Read(rb[:])
         if err != nil {
-            // 关键步骤：加密随机失败回退到非加密随机（极少发生）
-            mrand.Seed(time.Now().UnixNano())
+            // 关键步骤：加密随机失败回退到非加密随机（极少发生）；
+            // 使用默认随机源（Go 1.20 起无需调用 Seed）。
             b[i] = alphabet[mrand.Intn(len(alphabet))]
             continue
         }
@@ -63,8 +62,7 @@ func GenerateDigitCodeImagePNG(code string, width, height int, noiseLines, noise
         return nil, errors.New("图片尺寸过小，至少需30x20")
     }
 
-    // 关键步骤：初始化随机，用于抖动与干扰
-    mrand.Seed(time.Now().UnixNano())
+    // 关键步骤：使用默认随机源用于抖动与干扰（Go 1.20 起无需调用 Seed）
 
     // 关键步骤：创建并填充背景
     img := image.NewRGBA(image.Rect(0, 0, width, height))

@@ -9,7 +9,6 @@ import (
     "image/png"
     "math"
     mrand "math/rand"
-    "time"
 
     "golang.org/x/image/font"
     "golang.org/x/image/font/basicfont"
@@ -63,8 +62,7 @@ func generateTextCaptchaImagePNGInternal(text string, width, height int, noiseLi
     if width < 60 || height < 24 {
         return nil, errors.New("图片尺寸过小，至少需60x24")
     }
-    // 关键步骤：初始化随机用于抖动与干扰
-    mrand.Seed(time.Now().UnixNano())
+    // 关键步骤：使用默认随机源用于抖动与干扰（Go 1.20 起无需调用 Seed）
 
     // 关键步骤：构造白色背景图
     img := image.NewRGBA(image.Rect(0, 0, width, height))

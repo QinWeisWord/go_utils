@@ -40,14 +40,15 @@ func TestAddMonthsNegativeEdges(t *testing.T) {
 // 返回值: 无
 // 关键步骤：随机生成日期，验证返回为目标星期且严格晚于起始当天
 func TestNextWeekdayRandom(t *testing.T) {
-    rand.Seed(20231111)
+    // 关键步骤：使用局部随机生成器以获得确定性序列（避免全局 Seed 弃用）
+    rng := rand.New(rand.NewSource(20231111))
     for i := 0; i < 100; i++ {
         // 随机日期（近几年区间）
-        y := 2020 + rand.Intn(6)
-        m := time.Month(1 + rand.Intn(12))
-        d := 1 + rand.Intn(28) // 避免无效日期
-        base := time.Date(y, m, d, rand.Intn(24), rand.Intn(60), 0, 0, time.Local)
-        target := time.Weekday(rand.Intn(7))
+        y := 2020 + rng.Intn(6)
+        m := time.Month(1 + rng.Intn(12))
+        d := 1 + rng.Intn(28) // 避免无效日期
+        base := time.Date(y, m, d, rng.Intn(24), rng.Intn(60), 0, 0, time.Local)
+        target := time.Weekday(rng.Intn(7))
         next := NextWeekday(base, target)
         if next.Weekday() != target {
             t.Fatalf("返回星期不匹配: got=%v want=%v", next.Weekday(), target)

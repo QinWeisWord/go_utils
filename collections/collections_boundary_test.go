@@ -10,9 +10,10 @@ import (
 // 返回值: 无
 // 关键步骤：构造小域随机序列以产生大量重复，验证保留首次出现顺序
 func TestUniqueOrderStability(t *testing.T) {
-    rand.Seed(12345)
+    // 关键步骤：使用局部随机生成器以获得确定性序列（避免全局 Seed 弃用）
+    rng := rand.New(rand.NewSource(12345))
     in := make([]int, 0, 1000)
-    for i := 0; i < 1000; i++ { in = append(in, rand.Intn(50)) }
+    for i := 0; i < 1000; i++ { in = append(in, rng.Intn(50)) }
     out := Unique(in)
 
     // 计算期望：记录首次出现位置并按该顺序输出
@@ -40,9 +41,9 @@ func TestFilterEdges(t *testing.T) {
     // 全丢弃
     none := Filter(in, func(x int) bool { return false })
     if len(none) != 0 { t.Fatalf("全丢弃应为空: got=%d", len(none)) }
-    // 随机选择（固定seed）
-    rand.Seed(7)
-    sel := Filter(in, func(x int) bool { return rand.Intn(2) == 0 })
+    // 随机选择（固定seed，使用局部随机生成器）
+    rng := rand.New(rand.NewSource(7))
+    sel := Filter(in, func(x int) bool { return rng.Intn(2) == 0 })
     // 长度应在[0,len(in)]且元素来自原集合
     if len(sel) > len(in) { t.Fatalf("随机过滤长度异常: %d", len(sel)) }
     for _, v := range sel {

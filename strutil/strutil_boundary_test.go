@@ -27,12 +27,13 @@ func TestSubstringBoundaries(t *testing.T) {
 // 返回值: 无
 // 关键步骤：随机生成包含中文与Emoji的字符串，验证 Reverse(Reverse(s)) == s
 func TestReverseTwiceRandom(t *testing.T) {
-    rand.Seed(123456)
+    // 关键步骤：使用局部随机生成器以获得确定性序列（避免全局 Seed 弃用）
+    rng := rand.New(rand.NewSource(123456))
     pool := []rune("abcXYZ你我他😀🚀🧡")
     for i := 0; i < 100; i++ {
-        n := rand.Intn(40)
+        n := rng.Intn(40)
         rs := make([]rune, n)
-        for j := 0; j < n; j++ { rs[j] = pool[rand.Intn(len(pool))] }
+        for j := 0; j < n; j++ { rs[j] = pool[rng.Intn(len(pool))] }
         s := string(rs)
         if Reverse(Reverse(s)) != s { t.Fatalf("双反转不等价: %q", s) }
     }
