@@ -16,6 +16,7 @@ import (
     // "go_utils/timeenv"
     // "go_utils/cryptorand"
     // "go_utils/collections"
+    // "go_utils/captcha"
 )
 ```
 
@@ -349,3 +350,51 @@ ys, ye := timeenv.GetYearRange(now)
 - `DiffDays` 基于各自当天起始计算，可能受夏令时影响；`DiffHours` 基于绝对时间差。
 - 区间方法返回 `[start, end]`；周的结束为起点+7天-1纳秒，月/季/年的结束为所在单位的最后一纳秒。
 - 季度划分为 Q1: 1–3 月，Q2: 4–6 月，Q3: 7–9 月，Q4: 10–12 月。
+- ## 验证码（字符串与图片）
+
+提供通用字符串验证码生成以及数字图片验证码（7段数码管样式，便于无外部字体依赖）。
+
+API：
+- `captcha.GenerateCodeString(length int, alphabet string) (string, error)`：生成验证码字符串；`alphabet`为空时默认使用`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`（剔除易混字符）。
+- `captcha.GenerateDigitCodeImagePNG(code string, width, height int, noiseLines, noiseDots int) ([]byte, error)`：将数字验证码生成PNG图片；仅支持数字`0-9`。
+- `captcha.GenerateTextCaptchaImagePNG(text string, width, height int, noiseLines, noiseDots int, fontBytes []byte) ([]byte, error)`：生成文本图片验证码（字母/数字）；`fontBytes`可传入自定义TTF字体字节，为空时使用内置`basicfont`。
+ - `captcha.BuildAlphabet(includeUpper, includeLower, includeDigits bool, excludeAmbiguous bool, customExclude string) string`：构建验证码字符集（支持易混字符剔除与自定义排除）。
+
+示例：
+
+```go
+// 生成6位验证码字符串（默认字符集，字母数字但剔除易混字符）
+code, _ := captcha.GenerateCodeString(6, "")
+
+// 将数字验证码渲染为PNG图片（建议将字符串限定为数字）
+// 尺寸 160x50，干扰线 4 条，干扰点 120 个
+imgBytes, _ := captcha.GenerateDigitCodeImagePNG(code, 160, 50, 4, 120)
+_ = os.WriteFile("captcha.png", imgBytes, 0644)
+
+// 文本图片验证码（字母+数字，使用内置 basicfont）
+imgBytes2, _ := captcha.GenerateTextCaptchaImagePNG("AbC9Z", 180, 60, 4, 200, nil)
+_ = os.WriteFile("captcha_text.png", imgBytes2, 0644)
+
+// 使用自定义 TTF 字体（从文件加载）
+ttf, _ := os.ReadFile("FiraSans-Regular.ttf")
+imgBytes3, _ := captcha.GenerateTextCaptchaImagePNG("GoLang", 200, 70, 6, 240, ttf)
+_ = os.WriteFile("captcha_text_ttf.png", imgBytes3, 0644)
+```
+
+说明：
+- 图片渲染目前仅支持数字验证码（0-9），采用7段数码管绘制，无需外部字体库；若`code`包含非数字会返回错误。
+- 文本验证码字符集可自定义；若需字母图片验证码，可在后续版本扩展或引入字体库。
+- 文本图片验证码支持字母与数字；默认使用内置 `basicfont`，若提供 `fontBytes` 将使用该 TTF 字体绘制。
+- 文本图片验证码包含干扰线/点与随机抖动；字体大小随图片高度自适应（约 70% 高度）。
+ - 强化策略：已内置多字符集混淆（剔除易混 `O/0/I/1/l` 等）、错切/旋转形变与整体波纹扭曲，以及浅色背景纹理噪声，提升对抗性与识别难度（默认参数为轻度变形，保证可读性）。
+更多示例：
+
+```go
+// 使用策略构建字符集（大写+数字，剔除易混；额外排除小写l）
+alphabet := captcha.BuildAlphabet(true, false, true, true, "l")
+code2, _ := captcha.GenerateCodeString(6, alphabet)
+
+// 生成文本验证码图片（内置旋转/错切/波纹与背景纹理）
+imgBytes4, _ := captcha.GenerateTextCaptchaImagePNG(code2, 200, 70, 6, 240, nil)
+_ = os.WriteFile("captcha_text_adv.png", imgBytes4, 0644)
+```
