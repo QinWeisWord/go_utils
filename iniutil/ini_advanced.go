@@ -242,24 +242,8 @@ func (c *Config) resolveValue(section, key string, depth int, visiting map[strin
     return out.String(), nil
 }
 
-// GetStrings 获取字符串切片值（按分隔符拆分并去除空白）
-// 参数 section: 区段名称
-// 参数 key: 键名称
-// 参数 sep: 分隔符字符串（如 ","）
-// 参数 def: 缺失时返回的默认切片
-// 返回值: 字符串切片与错误；成功时错误为nil
-// 关键步骤：Split并Trim每个元素
-func (c *Config) GetStrings(section, key, sep string, def []string) ([]string, error) {
-    v := c.GetString(section, key, "")
-    if v == "" { return def, nil }
-    parts := strings.Split(v, sep)
-    out := make([]string, 0, len(parts))
-    for _, p := range parts {
-        p = strings.TrimSpace(p)
-        if p != "" { out = append(out, p) }
-    }
-    return out, nil
-}
+// 注意：字符串数组的拆分/连接属于通用字符串操作，已迁移到 strutil 包。
+// 若需要将配置中的值读为切片，可读取为字符串后使用 strutil 包的工具函数处理。
 
 // stripInlineComment 内联注释剥离（不处理引号内的分号与井号）
 // 参数 s: 原始值字符串

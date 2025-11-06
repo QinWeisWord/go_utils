@@ -77,6 +77,25 @@ func Join(parts []string, sep string) string {
     return strings.Join(parts, sep)
 }
 
+// SplitTrimNonEmpty 按分隔符拆分并去除空白与空项
+// 参数 s: 原始字符串
+// 参数 sep: 分隔符字符串
+// 返回值: 去除空白后的非空字符串切片
+// 关键步骤：先Split，再逐项TrimSpace，过滤空字符串
+func SplitTrimNonEmpty(s, sep string) []string {
+    // 关键步骤：基础拆分
+    parts := strings.Split(s, sep)
+    // 关键步骤：Trim并过滤空项
+    out := make([]string, 0, len(parts))
+    for _, p := range parts {
+        p = strings.TrimSpace(p)
+        if len(p) > 0 {
+            out = append(out, p)
+        }
+    }
+    return out
+}
+
 // Substring 按字符索引截取子串（支持UTF-8）
 // 参数 s: 原始字符串
 // 参数 start: 起始字符索引（基于Unicode字符）

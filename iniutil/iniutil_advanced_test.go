@@ -6,6 +6,7 @@ import (
     "path/filepath"
     "strings"
     "testing"
+    "go_utils/strutil"
 )
 
 // TestInlineCommentAndColon 测试内联注释与冒号分隔支持
@@ -97,9 +98,25 @@ func TestDuplicateAppendAndGetStrings(t *testing.T) {
     opt := ParseOptions{AppendDuplicateKeys: true}
     cfg, err := LoadFromReaderWithOptions(strings.NewReader(ini), opt)
     if err != nil { t.Fatalf("parse error: %v", err) }
-    arr, err := cfg.GetStrings("list", "items", ",", nil)
-    if err != nil { t.Fatalf("GetStrings err: %v", err) }
+    // 关键步骤：读取字符串后使用 strutil 进行拆分
+    raw := cfg.GetString("list", "items", "")
+    arr := strutil.SplitTrimNonEmpty(raw, ",")
     if len(arr) != 3 || arr[0] != "a" || arr[1] != "b" || arr[2] != "c" {
         t.Fatalf("items=%v", arr)
+    }
+}
+
+// TestSetStrings 测试 SetStrings 与 GetStrings 配套使用
+// 参数 t: 测试句柄
+// 返回值: 无
+// 关键步骤：SetStrings 写入后应可通过 GetStrings 读取到同样的元素
+func TestSetStrings(t *testing.T) {
+    c := New()
+    // 关键步骤：使用 strutil.Join 将切片连接后写入配置
+    c.Set("arr", "vals", strutil.Join([]string{"a", "b", "c"}, ","))
+    raw := c.GetString("arr", "vals", "")
+    arr := strutil.SplitTrimNonEmpty(raw, ",")
+    if len(arr) != 3 || arr[0] != "a" || arr[1] != "b" || arr[2] != "c" {
+        t.Fatalf("vals=%v", arr)
     }
 }
