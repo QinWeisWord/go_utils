@@ -6,7 +6,7 @@ import (
     "os"
     "strconv"
 
-    "go_utils/captcha"
+    "github.com/QinWeisWord/go_utils/captcha"
 )
 
 // parseInt 从查询参数解析整数（带默认值）

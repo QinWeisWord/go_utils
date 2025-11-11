@@ -6,17 +6,17 @@
 
 ```go
 import (
-    "go_utils/numberchinese"
-    "go_utils/convert"
+    "github.com/QinWeisWord/go_utils/numberchinese"
+    "github.com/QinWeisWord/go_utils/convert"
     // 其他包按需引用：
-    // "go_utils/strutil"
-    // "go_utils/filejson"
-    // "go_utils/netutil"
-    // "go_utils/validate"
-    // "go_utils/timeenv"
-    // "go_utils/cryptorand"
-    // "go_utils/collections"
-    // "go_utils/captcha"
+    // "github.com/QinWeisWord/go_utils/strutil"
+    // "github.com/QinWeisWord/go_utils/filejson"
+    // "github.com/QinWeisWord/go_utils/netutil"
+    // "github.com/QinWeisWord/go_utils/validate"
+    // "github.com/QinWeisWord/go_utils/timeenv"
+    // "github.com/QinWeisWord/go_utils/cryptorand"
+    // "github.com/QinWeisWord/go_utils/collections"
+    // "github.com/QinWeisWord/go_utils/captcha"
 )
 ```
 

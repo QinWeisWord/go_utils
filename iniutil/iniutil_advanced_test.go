@@ -6,7 +6,7 @@ import (
     "path/filepath"
     "strings"
     "testing"
-    "go_utils/strutil"
+    "github.com/QinWeisWord/go_utils/strutil"
 )
 
 // TestInlineCommentAndColon 测试内联注释与冒号分隔支持
